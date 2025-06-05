@@ -5,8 +5,10 @@
 </template>
 
 <script>
-/* eslint-disable */
+/* eslint-disable no-undef */
+import 'leaflet/dist/leaflet.css'; 
 import axios from 'axios';
+import L from 'leaflet'; // Importar Leaflet
 
 export default {
   data() {
@@ -14,28 +16,37 @@ export default {
       info: null,
       map: null,
       marker: null,
-      google: null
+      currentId: null, // Para rastrear el id actual
     };
   },
   mounted() {
     this.loadMap();
-    const id = this.$route.params.id; // Obtenemos el ID de los parámetros de la URL
-    this.fetchData(id);
+    this.fetchData(this.$route.params.id); // Llamar inicialmente con el id de la URL
+  },
+  watch: {
+    '$route.params.id'(newId) {
+      // Solo llamar fetchData si el id ha cambiado
+      if (newId !== this.currentId) {
+        this.fetchData(newId);
+      }
+    },
   },
   methods: {
-    // Cargar el mapa
+    // Cargar el mapa solo una vez con Leaflet
     loadMap() {
-      const mapOptions = {
-        center: { lat: -33.4489, lng: -70.6693 }, // Centro de Santiago
-        zoom: 18,
-      };
-      this.map = new google.maps.Map(document.getElementById('map'), mapOptions);
+      if (!this.map) {
+        this.map = L.map('map').setView([-33.4489, -70.6693], 18); // Centro de Santiago
+
+        // Agregar un "tile layer" de OpenStreetMap
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(this.map);
+      }
     },
 
     // Obtener datos del servidor
     fetchData(id) {
+      this.currentId = id; // Guardar el id actual
       axios
-        .get(`http://147.182.163.74/api/mapa/${id}`)
+        .get(`http://147.182.163.74:3000/api/mapa/${id}`)
         .then((response) => {
           this.info = response.data;
           this.addMarker(this.info.Latitud, this.info.Longitud);
@@ -45,18 +56,29 @@ export default {
         });
     },
 
-    // Añadir marcador en el mapa
+    // Añadir marcador en el mapa usando Leaflet con ícono rojo
     addMarker(lat, lng) {
-      const position = { lat: parseFloat(lat), lng: parseFloat(lng) };
-      this.marker = new google.maps.Marker({
-        position,
-        map: this.map,
-        title: 'Ubicación',
+      const position = [parseFloat(lat), parseFloat(lng)];
+
+      // Crear un icono rojo personalizado
+      const redIcon = L.icon({
+        iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',  // URL del icono predeterminado
+        iconSize: [25, 41],  // Tamaño del ícono
+        iconAnchor: [12, 41],  // Puntos de anclaje
+        popupAnchor: [1, -34],  // Donde se coloca el popup
+        shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',  // Sombra del marcador
+        shadowSize: [41, 41],  // Tamaño de la sombra
       });
 
-      // Añadir un evento para mostrar la información al hacer clic
-      const infowindow = new google.maps.InfoWindow({
-        content: `<div>
+      if (this.marker) {
+        this.marker.setLatLng(position); // Actualizar la posición si el marcador ya existe
+      } else {
+        this.marker = L.marker(position, { icon: redIcon }).addTo(this.map); // Usar el icono rojo
+      }
+
+      // Añadir un popup al marcador con la información
+      this.marker.bindPopup(`
+        <div>
           <p>ID: ${this.info.ID}</p>
           <p>Nombre Sanitaria: ${this.info.nombre_sanitaria}</p>
           <p>Localidad: ${this.info.Localidad}</p>
@@ -71,25 +93,24 @@ export default {
           <p>Latitud: ${this.info.Latitud}</p>
           <p>Región: ${this.info.region_nombre}</p>
           <p>Comuna: ${this.info.comuna_name}</p>
-        </div>`,
-      });
+        </div>
+      `).openPopup();
 
-      this.marker.addListener('click', () => {
-        infowindow.open(this.map, this.marker);
-      });
-
-      this.map.setCenter(position); // Centrar el mapa en el marcador
+      this.map.setView(position, 18); // Centrar el mapa en el marcador
     },
   },
 };
 </script>
 
 <style scoped>
+/* Añadir estos estilos a tu archivo de estilo */
+html, body, #app {
+  height: 100%;
+  margin: 0;
+}
+
 #map {
   width: 100%;
-  height: 500px;
-}
-.info {
-  margin-top: 20px;
+  height: 100%; /* Asegurarse de que ocupe toda la altura disponible */
 }
 </style>
