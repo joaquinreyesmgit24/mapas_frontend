@@ -11,7 +11,7 @@ export default {
     methods: {
         eliminarTodaLaTabla() {
             // Llamar al endpoint para limpiar la tabla
-            fetch('http://localhost:3000/api/limpiar-tabla', {
+            fetch('http://147.182.163.74:3000/api/limpiar-tabla', {
                 method: 'DELETE'
             })
             .then(response => response.json())
@@ -28,7 +28,7 @@ export default {
             const formData = new FormData();
             formData.append('file', file);  // Añadir el archivo a FormData
 
-            fetch('http://localhost:3000/api/upload-excel', {
+            fetch('http://147.182.163.74:3000/api/upload-excel', {
                 method: 'POST',
                 body: formData
             })

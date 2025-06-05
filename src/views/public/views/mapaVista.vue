@@ -35,7 +35,7 @@ export default {
     // Obtener datos del servidor
     fetchData(id) {
       axios
-        .get(`http://localhost:3000/api/mapa/${id}`)
+        .get(`http://147.182.163.74/api/mapa/${id}`)
         .then((response) => {
           this.info = response.data;
           this.addMarker(this.info.Latitud, this.info.Longitud);
